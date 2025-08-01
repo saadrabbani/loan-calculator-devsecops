@@ -42,6 +42,7 @@ pipeline {
                     echo "🛡️ Running OWASP ZAP scan..."
                     zap-baseline -t http://localhost:5000 -r zap-report.html || echo "⚠️ ZAP scan completed"
                     echo "📄 Check zap-report.html for security findings"
+                    pwd
                 '''
             }
         }
