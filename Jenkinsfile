@@ -7,25 +7,41 @@ pipeline {
         stage('Build') {
             steps { sh 'docker build -t loan-calculator:latest .' }
         }
-        stage('Test') {
+        stage('Unit Test') {
             steps { 
                 sh 'python3 -m unittest discover -s tests -p "test_*.py"'
+            }
+        }
+        stage('Dependency Scan') {
+            steps { 
+                sh '''
+                    echo "🔍 Running Trivy dependency scan..."
+                    trivy fs --format table . || echo "⚠️ Trivy scan completed with findings"
+                '''
             }
         }
         stage('Deploy') {
             steps { 
                 sh '''
-                    # Stop any running containers using port 5000
-                    docker stop $(docker ps -q --filter "publish=5000") 2>/dev/null || true
+                    # Cleanup old containers
+                    docker stop loan-app 2>/dev/null || true
+                    docker rm loan-app 2>/dev/null || true
                     
-                    # Remove stopped containers to free up the name and resources
-                    docker container prune -f
-                    
-                    # Start new container
+                    # Deploy new container
                     docker run -d -p 5000:5000 --name loan-app loan-calculator:latest
                     
-                    echo "✅ Application deployed successfully!"
-                    echo "🌐 Access your app at: http://localhost:5000"
+                    # Wait for app to start
+                    sleep 10
+                    echo "✅ Application deployed at http://localhost:5000"
+                '''
+            }
+        }
+        stage('DAST') {
+            steps { 
+                sh '''
+                    echo "🛡️ Running OWASP ZAP scan..."
+                    zap-baseline -t http://localhost:5000 -r zap-report.html || echo "⚠️ ZAP scan completed"
+                    echo "📄 Check zap-report.html for security findings"
                 '''
             }
         }
