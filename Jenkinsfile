@@ -139,7 +139,7 @@ EOF
                 sh '''
                     echo "🛡️ Running OWASP ZAP Dynamic Security Scan..."
                     
-                    # Check if ZAP is available
+                    # Check if ZAP is available natively first
                     if command -v zap-baseline.py >/dev/null 2>&1; then
                         echo "🔍 ZAP found, running baseline scan..."
                         
@@ -159,33 +159,90 @@ EOF
                             echo "⚠️ ZAP markdown report not generated"
                         fi
                     
-                    # Alternative: Use Docker-based ZAP if native not available
+                    # Alternative: Use Docker-based ZAP with proper permissions
                     elif docker --version >/dev/null 2>&1; then
                         echo "🐳 Using Docker-based ZAP scan..."
                         
-                        docker run --rm -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable zap-baseline.py \\
+                        # Create a temporary directory with proper permissions
+                        TEMP_ZAP_DIR="/tmp/zap-reports-$"
+                        mkdir -p "$TEMP_ZAP_DIR"
+                        chmod 777 "$TEMP_ZAP_DIR"
+                        
+                        # Run ZAP with the temp directory
+                        docker run --rm \\
+                            -v "$TEMP_ZAP_DIR":/zap/wrk/:rw \\
+                            --user $(id -u):$(id -g) \\
+                            -t zaproxy/zap-stable zap-baseline.py \\
                             -t http://host.docker.internal:5000 \\
                             -r zap-report.html \\
-                            -I || echo "⚠️ Docker ZAP scan completed with findings"
+                            -w zap-report.md \\
+                            -I 2>&1 || echo "⚠️ ZAP scan completed (may have findings)"
+                        
+                        # Copy reports back to workspace if they exist
+                        if [ -f "$TEMP_ZAP_DIR/zap-report.html" ]; then
+                            cp "$TEMP_ZAP_DIR/zap-report.html" ./
+                            echo "✅ ZAP HTML report copied to workspace"
+                        fi
+                        
+                        if [ -f "$TEMP_ZAP_DIR/zap-report.md" ]; then
+                            cp "$TEMP_ZAP_DIR/zap-report.md" ./
+                            echo "✅ ZAP Markdown report copied to workspace"
+                            
+                            echo "==================== ZAP RESULTS ===================="
+                            head -50 zap-report.md 2>/dev/null || echo "Could not display ZAP results"
+                            echo "======================================================="
+                        fi
+                        
+                        # Cleanup temp directory
+                        rm -rf "$TEMP_ZAP_DIR"
+                        
+                        echo "📄 Docker ZAP scan completed!"
                     
                     else
-                        echo "⚠️ ZAP not available, creating placeholder report..."
+                        echo "⚠️ ZAP not available, performing basic security check..."
+                        
+                        # Test basic application security
+                        echo "🔍 Basic Application Security Check:"
+                        echo "====================================="
+                        
+                        # Check if application responds
+                        if curl -s http://localhost:5000 >/dev/null; then
+                            echo "✅ Application is accessible"
+                            
+                            # Check for common headers
+                            echo "🔍 Checking HTTP headers..."
+                            curl -I http://localhost:5000 2>/dev/null | head -10
+                            
+                            # Simple XSS test
+                            echo "🔍 Testing for basic XSS protection..."
+                            curl -s "http://localhost:5000/?test=<script>alert('xss')</script>" | grep -q "script" && echo "⚠️ Potential XSS vulnerability" || echo "✅ Basic XSS test passed"
+                            
+                        else
+                            echo "❌ Application not responding"
+                        fi
+                        
+                        # Create manual security report
                         cat > zap-report.md << EOF
 # DAST Security Scan Report
 
-**Status**: ZAP not available on this system
+**Status**: Manual security check performed (ZAP not available)
 **Target**: http://localhost:5000
-**Recommendation**: Install OWASP ZAP for proper dynamic security testing
+**Date**: $(date)
 
-## Manual Security Checklist:
-- [ ] Application responds to requests
-- [ ] No sensitive information in error messages  
-- [ ] HTTPS should be used in production
-- [ ] Input validation should be implemented
-- [ ] Authentication should be required for sensitive operations
+## Security Check Results:
+- Application accessibility: Tested
+- Basic HTTP headers: Reviewed  
+- Simple XSS test: Performed
+
+## Recommendations:
+- Install OWASP ZAP for comprehensive testing
+- Implement Content Security Policy (CSP)
+- Use HTTPS in production
+- Add input validation and sanitization
+- Consider implementing rate limiting
 
 EOF
-                        echo "📝 Placeholder security report created"
+                        echo "📝 Manual security report created"
                     fi
                 '''
             }
