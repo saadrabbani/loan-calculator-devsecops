@@ -8,7 +8,9 @@ pipeline {
             steps { sh 'docker build -t loan-calculator:latest .' }
         }
         stage('Test') {
-            steps { sh 'python3 -m unittest tests/test_app.py' }
+            steps { 
+                sh 'python3 -m unittest discover -s tests -p "test_*.py"'
+            }
         }
         stage('Deploy') {
             steps { sh 'docker run -d -p 8080:5000 loan-calculator:latest' }
