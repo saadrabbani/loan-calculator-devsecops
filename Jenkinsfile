@@ -19,7 +19,6 @@ pipeline {
         stage('SonarQube Analysis') {
             steps {
                 sh '''
-                    source ~/.bashrc
                     sonar-scanner \
                         -Dsonar.projectKey=Loan-Calculator-Application \
                         -Dsonar.sources=. \
