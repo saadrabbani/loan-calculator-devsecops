@@ -1,34 +1,35 @@
 pipeline {
     agent any
-    tools {
-        // Define SonarQube Scanner tool (must match the name in Global Tool Configuration)
-        'SonarQubeScanner' 'SonarQubeScanner'
-    }
     stages {
         stage('Clone') {
-            steps {
-                git 'https://github.com/saadrabbani/loan-calculator-devsecops.git'
+            steps { 
+                git 'https://github.com/saadrabbani/loan-calculator-devsecops.git' 
             }
         }
         stage('Build') {
-            steps {
-                sh 'docker build -t loan-calculator:latest .'
+            steps { 
+                sh 'docker build -t loan-calculator:latest .' 
             }
         }
         stage('Test') {
-            steps {
+            steps { 
                 sh 'python3 -m unittest discover -s tests -p "test_*.py"'
             }
         }
         stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv('SonarQube') { // 'SonarQube' matches the server name in Jenkins config
-                    sh "${tool 'SonarQubeScanner'}/bin/sonar-scanner"
-                }
+                sh '''
+                    source ~/.bashrc
+                    sonar-scanner \
+                        -Dsonar.projectKey=Loan-Calculator-Application \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://192.168.80.109:9000 \
+                        -Dsonar.login=sqp_9776029d91d2a8bc0d0b617af9acd182f6dbeae3
+                '''
             }
         }
         stage('Deploy') {
-            steps {
+            steps { 
                 sh '''
                     # Stop any running containers using port 5000
                     docker stop $(docker ps -q --filter "publish=5000") 2>/dev/null || true
