@@ -2,29 +2,14 @@ pipeline {
     agent any
     stages {
         stage('Clone') {
-            steps { 
-                git 'https://github.com/saadrabbani/loan-calculator-devsecops.git' 
-            }
+            steps { git 'https://github.com/saadrabbani/loan-calculator-devsecops.git' }
         }
         stage('Build') {
-            steps { 
-                sh 'docker build -t loan-calculator:latest .' 
-            }
+            steps { sh 'docker build -t loan-calculator:latest .' }
         }
         stage('Test') {
             steps { 
                 sh 'python3 -m unittest discover -s tests -p "test_*.py"'
-            }
-        }
-        stage('SonarQube Analysis') {
-            steps {
-                sh '''
-                    sonar-scanner \
-                        -Dsonar.projectKey=Loan-Calculator-Application \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://192.168.80.109:9000 \
-                        -Dsonar.login=sqp_9776029d91d2a8bc0d0b617af9acd182f6dbeae3
-                '''
             }
         }
         stage('Deploy') {

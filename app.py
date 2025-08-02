@@ -40,3 +40,4 @@ def calculate_loan():
 # New Issue 6: Debug mode enabled
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
+    

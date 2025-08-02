@@ -1,6 +1,6 @@
-projectKey=Loan-Calculator-Application
+projectKey=Loan-Calculator2
 serverUrl=http://192.168.80.109:9000
 serverVersion=9.9.0.65466
-dashboardUrl=http://192.168.80.109:9000/dashboard?id=Loan-Calculator-Application
-ceTaskId=AZhr0uM4e89Hr-pNZb1S
-ceTaskUrl=http://192.168.80.109:9000/api/ce/task?id=AZhr0uM4e89Hr-pNZb1S
+dashboardUrl=http://192.168.80.109:9000/dashboard?id=Loan-Calculator2
+ceTaskId=AZhr5g0ke89Hr-pNZb2_
+ceTaskUrl=http://192.168.80.109:9000/api/ce/task?id=AZhr5g0ke89Hr-pNZb2_
